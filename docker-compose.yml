@@ -1,0 +1,44 @@
+version: "3.8"
+
+services: 
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: laravel-job-portal
+    restart: unless-stopped
+    ports: 
+      - "8000:80"
+    volumes: 
+      - .:/var/www/html
+
+  mysql: 
+    image: mysql:8
+    container_name: laravel-job-portal-mysql
+    restart: unless-stopped
+    ports:
+      - "3307:3306"
+    
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: laravel-job-portal
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secret
+    volumes:
+      - dbdata:/var/lib/mysql
+  
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: laravel-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: root
+    ports: 
+      - "8080:80"
+    depends_on: 
+      - mysql
+
+volumes:
+  dbdata:
