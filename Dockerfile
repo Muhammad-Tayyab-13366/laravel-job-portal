@@ -5,8 +5,17 @@ RUN a2enmod rewrite
 
 # Install PHP extensions required by Laravel
 RUN apt-get update && apt-get install -y \
-    zip unzip git curl libpng-dev libonig-dev libxml2-dev \
-    && docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
+    libpng-dev \
+    libonig-dev \
+    libzip-dev \
+    zip \
+    unzip \
+    git \
+    curl \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install gd mbstring pdo pdo_mysql zip
 
 # Set Apache Document Root to /var/www/html/public
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public

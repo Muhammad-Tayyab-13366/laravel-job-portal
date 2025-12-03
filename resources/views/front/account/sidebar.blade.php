@@ -1,10 +1,14 @@
 <div class="card border-0 shadow mb-4 p-3">
     <div class="s-body text-center mt-3">
-        <img src="assets/assets/images/avatar7.png" alt="avatar"  class="rounded-circle img-fluid" style="width: 150px;">
+        @if(Auth::user()->image !='')
+        <img src="{{ asset('profile_pic/thumb/'.Auth::user()->image) }}" alt="avatar"  class="rounded-circle img-fluid" id="profil-pic" style="width: 150px;">
+        @else 
+        <img src="{{ asset('assets/images/avatar7.png') }}" alt="avatar"  id="profil-pic" class="rounded-circle img-fluid" style="width: 150px;">
+        @endif
         <h5 class="mt-3 pb-0">{{ Auth::user()->name }}</h5>
         <p class="text-muted mb-1 fs-6">{{ Auth::user()->designation }}</p>
         <div class="d-flex justify-content-center mb-2">
-            <button data-bs-toggle="modal" data-bs-target="#exampleModal" type="button" class="btn btn-primary">Change Profile Picture</button>
+            <button data-bs-toggle="modal" data-bs-target="#profile_pic_modal" type="button" class="btn btn-primary">Change Profile Picture</button>
         </div>
     </div>
 </div>
@@ -18,13 +22,13 @@
                 <a href="post-job.html">Post a Job</a>
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-center p-3">
-                <a href="my-jobs.html">My Jobs</a>
+                <a href="{{ route('account.job.my-jobs') }}">My Jobs</a>
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-center p-3">
                 <a href="job-applied.html">Jobs Applied</a>
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-center p-3">
-                <a href="saved-jobs.html">Saved Jobs</a>
+                <a href="">Saved Jobs</a>
             </li>   
             <li class="list-group-item d-flex justify-content-between align-items-center p-3">
                 <a href="{{ route('account.logout') }}">Logout</a>

@@ -2,11 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
+use App\Models\Job as ModelsJob;
+use App\Models\JobApplication;
+use App\Models\JobType;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Queue\Jobs\Job;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
+
 
 class AccountController extends Controller
 {
@@ -88,11 +96,277 @@ class AccountController extends Controller
     }
 
     public function profile(){
-        return  view("front.account.profile");
+
+        $user_id = Auth::user()->id;
+        $user = User::where('id', $user_id)->first();
+        
+        return  view("front.account.profile", ["user" => $user]);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user_id = Auth::user()->id;
+        $validator = Validator::make($request->all(),[
+            "name" => "required|max:20",
+            "email" => 'required|email|unique:users,email,'.$user_id.',id',
+            "designation" => "required|max:20",
+            "mobile" => "required|max:13"
+        ]);
+
+        if($validator->passes()){
+
+            $user = User::find($user_id);
+            $user->name = $request->name;
+            $user->email = $request->email;
+            $user->designation = $request->designation;
+            $user->mobile = $request->mobile;
+            $user->save();
+            return response()->json([
+                "status" => true,
+                "errors" => []
+            ]);
+
+        }else {
+            return response()->json([
+                "status" => false,
+                "errors" => $validator->errors()
+            ]);
+        }
+    }
+
+    public function updatePassword(Request $request){
+        
+        $validator = Validator::make($request->all(),[
+            "password" => "required",
+            "new_password" => "required|min:5|same:confirm_new_password",
+            "confirm_new_password" => "required|min:5"
+        ]);
+
+        if($validator->passes()){
+
+            $user = User::find(Auth::user()->id);
+            $user->password = Hash::make($request->new_password);
+            $user->save();
+            return response()->json([
+                "status" => true,
+                "errors" => $validator->errors()
+            ]);
+        }else {
+            return response()->json([
+                "status" => false,
+                "errors" => $validator->errors()
+            ]);
+        }
+    }
+
+    public function updateProfilePic(Request $request){
+        $user_id = Auth::user()->id;
+        $validator = Validator::make($request->all(), [
+            "image" => "required|image"
+        ]);
+
+        if($validator->passes()){
+
+            $image = $request->image;
+            $ext   = $image->getClientOriginalExtension();
+            $img_name = $user_id."-".time().".".$ext;
+            
+            $image->move(public_path("profile_pic"), $img_name);
+
+            // create a small thumbnail
+            $source_path = public_path("profile_pic")."/".$img_name;
+            // crop the best fitting 1:1 ratio (200x200) and resize to 200x200 pixel
+            $manager = new ImageManager(Driver::class);
+            $image = $manager->read($source_path);
+            $image->cover(150, 150);
+            $image->toPng()->save(public_path("profile_pic/thumb")."/".$img_name);
+
+
+
+            User::where('id',$user_id)->update(["image" => $img_name]);
+            $img_path = asset('profile_pic/thumb/'.$img_name);
+            return response()->json([
+                "status" => true,
+                "errors" => [],
+                "img_path" => $img_path
+            ]);
+        }else {
+            return response()->json([
+                "status" => false,
+                "errors" => $validator->errors()
+            ]);
+        }
     }
 
     public function logout(){
         Auth::logout();
         return redirect()->route('account.login');
+    }
+
+    public function createJob(){
+
+        $data['categories'] = Category::where('status', 1)->orderBy('name', 'asc')->get();
+        $data['jobtypes']   = JobType::where('status', 1)->orderBy('name', 'asc')->get();
+        return view('front.account.job.create', $data);
+    }
+
+    public function saveJob(Request $request){
+
+        $validator = Validator::make($request->all(),[
+            "title" => "required|min:5|max:255",
+            "category_id" => "required|integer|min:1",
+            "job_type_id" => "required|integer|min:1",
+            "vacancies" => "required|integer|min:1",
+            "location" => "required|min:5|max:255",
+            "description" => "required",
+            "company_name" => "required|min:5|max:255",
+            ],
+            [
+                "category_id.required" => "Please select a job category.",
+                "category_id.integer"  => "Invalid category value.",
+                "category_id.min"      => "Please select a valid category.",
+
+                "job_type_id.required" => "Please select a job type.",
+                "job_type_id.integer"  => "Invalid job type value.",
+                "job_type_id.min"      => "Please select a valid job type.",
+            ]
+
+        );
+
+        if($validator->passes()){
+
+            $job = new ModelsJob();
+            $job->title = $request->title;
+            $job->category_id = $request->category_id;
+            $job->job_type_id = $request->job_type_id;
+            $job->vacancies = $request->vacancies;
+            $job->salary = $request->salary;
+            $job->location = $request->location;
+            $job->description = $request->description;
+            $job->responsibilities = $request->responsibilities;
+            $job->qualifications = $request->qualifications;
+            $job->keywords = $request->keywords;
+            $job->experience = $request->experience;
+            $job->company_name = $request->company_name;
+            $job->company_website = $request->company_website;
+            $job->company_location = $request->company_location;
+            $job->posted_by = Auth::user()->id;
+            $job->save();
+
+            session()->flash('success', 'Job has been posted successfully.');
+
+            return response()->json([
+                "status" => true,
+                "errors" => []
+            ]);
+
+        }else {
+            return response()->json([
+                "status" => false,
+                "errors" => $validator->errors()
+            ]);
+        }
+    }
+
+    public function myJobs(){
+        $user_id = Auth::user()->id;
+        $jobs = ModelsJob::with(["category", "jobType"])->where('posted_by', $user_id)->orderBy('created_at', 'desc')->paginate(10);
+        
+        
+        return view('front.account.job.my-jobs', ['jobs' => $jobs]);
+    }   
+
+    public function editJob($job_id){
+        $data['categories'] = Category::where('status', 1)->orderBy('name', 'asc')->get();
+        $data['jobtypes']   = JobType::where('status', 1)->orderBy('name', 'asc')->get();
+        $data['job'] = ModelsJob::where(['id' => $job_id, "posted_by" => Auth::user()->id])->first();
+        if(!$data['job']){
+            abort(404);
+        }
+
+        return view('front.account.job.edit', $data);
+    }
+
+    public function updateJob(Request $request, $job_id){
+
+        $validator = Validator::make($request->all(),[
+            "title" => "required|min:5|max:255",
+            "category_id" => "required|integer|min:1",
+            "job_type_id" => "required|integer|min:1",
+            "vacancies" => "required|integer|min:1",
+            "location" => "required|min:5|max:255",
+            "description" => "required",
+            "company_name" => "required|min:5|max:255",
+            ],
+            [
+                "category_id.required" => "Please select a job category.",
+                "category_id.integer"  => "Invalid category value.",
+                "category_id.min"      => "Please select a valid category.",
+
+                "job_type_id.required" => "Please select a job type.",
+                "job_type_id.integer"  => "Invalid job type value.",
+                "job_type_id.min"      => "Please select a valid job type.",
+            ]
+
+        );
+
+        if($validator->passes()){
+
+            $job = ModelsJob::find($job_id);
+            $job->title = $request->title;
+            $job->category_id = $request->category_id;
+            $job->job_type_id = $request->job_type_id;
+            $job->vacancies = $request->vacancies;
+            $job->salary = $request->salary;
+            $job->location = $request->location;
+            $job->description = $request->description;
+            $job->responsibilities = $request->responsibilities;
+            $job->qualifications = $request->qualifications;
+            $job->keywords = $request->keywords;
+            $job->experience = $request->experience;
+            $job->company_name = $request->company_name;
+            $job->company_website = $request->company_website;
+            $job->company_location = $request->company_location;
+            $job->save();
+
+            session()->flash('success', 'Job has been updated successfully.');
+
+            return response()->json([
+                "status" => true,
+                "errors" => []
+            ]);
+
+        }else {
+            return response()->json([
+                "status" => false,
+                "errors" => $validator->errors()
+            ]);
+        }
+    }
+
+    public function deleteJob(Request $request){
+        $jobId = $request->job_id;
+        $job = ModelsJob::where(['id' => $jobId, 'posted_by' => Auth::user()->id])->first();
+        if($job){
+            session()->flash('success', 'Job has been deleted successfully.');
+            $job->delete();
+            return response()->json([
+                "status" => true,
+                "message" => "Job has been deleted successfully."
+            ]);
+        }else {
+            return response()->json([  
+                "status" => false,
+                "message" => "Job not found."
+            ]); 
+        }
+    }
+
+    public function myJobApplications(){
+        $data['jobs_applications'] = JobApplication::with(['job', 'job.jobType', 'job.category', 'job.applications'])
+                                        ->where(['user_id' => auth()->user()->id])
+                                        ->orderBy('id', 'desc')
+                                        ->paginate(10);
+        return view('front.account.job.applied-jobs', $data);
     }
 }

@@ -46,6 +46,11 @@
     $("#registeration_form").submit(function(e){
         e.preventDefault();
 
+
+        $("#name").removeClass("is-invalid").siblings('p').removeClass('invalid-feedback').html('');
+        $("#email").removeClass("is-invalid").siblings('p').removeClass('invalid-feedback').html('');
+        $("#password").removeClass("is-invalid").siblings('p').removeClass('invalid-feedback').html('');
+        $("#confirm_password").removeClass("is-invalid").siblings('p').removeClass('invalid-feedback').html('');
         $.ajax({
             url: '{{ route("account.process-registeration") }}',
             type: 'post',
@@ -55,6 +60,9 @@
                 console.log(response)
 
                 if(response.status == false){
+
+                    
+
                     var errors = response.errors;
                     
                     for (let field in errors) {
@@ -82,5 +90,8 @@
             }
         })
     })
+    
+    
+     
 </script>
 @endsection
