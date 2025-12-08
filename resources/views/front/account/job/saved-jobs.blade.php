@@ -6,8 +6,8 @@
             <div class="col">
                 <nav aria-label="breadcrumb" class=" rounded-3 p-3 mb-4">
                     <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="#">Home</a></li>
-                        <li class="breadcrumb-item active">My Jobs</li>
+                        <li class="breadcrumb-item"><a href="{{ route('home') }}">Home</a></li>
+                        <li class="breadcrumb-item active">My Saved Jobs</li>
                     </ol>
                 </nav>
             </div>
@@ -26,11 +26,9 @@
                         @endif
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h3 class="fs-4 mb-1">My Jobs</h3>
+                                <h3 class="fs-4 mb-1">Jobs Applied</h3>
                             </div>
-                            <div style="margin-top: -10px;">
-                                <a href="{{ route('account.job.create') }}" class="btn btn-primary">Post a Job</a>
-                            </div>
+                          
                             
                         </div>
                         <div class="table-responsive">
@@ -38,28 +36,28 @@
                                 <thead class="bg-light">
                                     <tr>
                                         <th scope="col">Title</th>
-                                        <th scope="col">Job Created</th>
+                                        <th scope="col">Saved at</th>
                                         <th scope="col">Applicants</th>
                                         <th scope="col">Status</th>
                                         <th scope="col">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody class="border-0">
-                                    @if($jobs->count() == 0)
+                                    @if($saved_jobs->count() == 0)
                                         <tr>
                                             <td colspan="5" class="text-center">No jobs found.</td>
                                         </tr>
                                     @else
-                                        @foreach($jobs as $job)
+                                        @foreach($saved_jobs as $jobs_application)
                                             <tr class="active">
                                                 <td>
-                                                    <div class="job-name fw-500">{{ $job->title }}</div>
-                                                    <div class="info1">{{ $job->category->name }} . {{ $job->location }}</div>
+                                                    <div class="job-name fw-500">{{ $jobs_application->job->title }}</div>
+                                                    <div class="info1">{{ $jobs_application->job->category->name }} . {{ $jobs_application->job->location }}</div>
                                                 </td>
-                                                <td>{{ \Carbon\Carbon::parse($job->created_at)->format('d M, Y')  }}</td>
-                                                <td>130 Applications</td>
+                                                <td>{{ \Carbon\Carbon::parse($jobs_application->created_at)->format('d M, Y')  }}</td>
+                                                <td>{{ $jobs_application->job->applications->count() }} Applications</td>
                                                 <td>
-                                                    @if($job->status == 1) 
+                                                    @if($jobs_application->job->status == 1) 
                                                         <div class="job-status text-capitalize">Active</div>
                                                     @else 
                                                         <div class="job-status text-capitalize">Block</div>
@@ -73,9 +71,9 @@
                                                             <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
                                                         </a>
                                                         <ul class="dropdown-menu dropdown-menu-end">
-                                                            <li><a class="dropdown-item" href="{{ route('job.detail', $job->id)}}"> <i class="fa fa-eye" aria-hidden="true"></i> View</a></li>
-                                                            <li><a class="dropdown-item" href="{{ route('account.job.edit', $job->id)}}"><i class="fa fa-edit" aria-hidden="true"></i> Edit</a></li>
-                                                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="deleteJob({{ $job->id }})"><i class="fa fa-trash" aria-hidden="true"></i> Delete</a></li>
+                                                            <li><a class="dropdown-item" href="{{ route('job.detail', $jobs_application->job_id)}}"> <i class="fa fa-eye" aria-hidden="true"></i> View</a></li>
+                                                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="removeSavedJob({{$jobs_application->job_id}})"><i class="fa fa-edit" aria-hidden="true"></i> Remove</a></li>
+                                                             <!-- <li><a class="dropdown-item" href="javascript:void(0);" onclick=""><i class="fa fa-trash" aria-hidden="true"></i> Delete</a></li> -->
                                                         </ul>
                                                     </div>
                                                 </td>
@@ -88,7 +86,7 @@
                             </table>
                         </div>
                         <div>
-                            {{ $jobs->links() }}
+                            {{ $saved_jobs->links() }}
                         </div>
                     </div>
                 </div> 
@@ -101,47 +99,12 @@
 
 @section('customJs')
 <script>
-    $("#job_create_form").submit(function(e){
-        e.preventDefault();
+    
 
-        // Remove old errors (works for all fields)
-        $(".form-control").removeClass("is-invalid");
-        $(".invalid-feedback").remove();
-
-        $.ajax({
-            url: '{{ route("account.job.create") }}',
-            type: 'post',
-            data: $(this).serializeArray(),
-            dataType: 'json',
-            success: function(response){
-
-                if(response.status === false){
-                    let errors = response.errors;
-
-                    $.each(errors, function(field, messages){
-
-                        let input = $("#" + field);
-
-                        input.addClass("is-invalid");
-
-                        // Insert error message AFTER the input
-                        input.after(
-                            `<div class="invalid-feedback d-block">${messages[0]}</div>`
-                        );
-                    });
-                }
-                else {
-                    
-                    window.location.href = "{{ route('account.job.my-jobs') }}";
-                }
-            }
-        });
-    });
-
-    function deleteJob(jobId){
-        if(confirm("Are you sure you want to delete this job?")){
+    function removeSavedJob(jobId){
+        if(confirm("Are you sure you want to remove from saved job list?")){
             $.ajax({
-                url: '{{ route("account.job.delete") }}',
+                url: '{{ route("account.job.remove-saved-job") }}',
                 type: 'post',
                 data: { job_id: jobId },
                 dataType: 'json',
@@ -156,8 +119,6 @@
             });
         }
     }
-
-
 
 
 </script>

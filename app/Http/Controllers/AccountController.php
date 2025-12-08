@@ -2,16 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ResetPasswordEmail;
 use App\Models\Category;
 use App\Models\Job as ModelsJob;
 use App\Models\JobApplication;
 use App\Models\JobType;
+use App\Models\SavedJob;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Queue\Jobs\Job;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 
@@ -279,7 +284,11 @@ class AccountController extends Controller
     public function editJob($job_id){
         $data['categories'] = Category::where('status', 1)->orderBy('name', 'asc')->get();
         $data['jobtypes']   = JobType::where('status', 1)->orderBy('name', 'asc')->get();
-        $data['job'] = ModelsJob::where(['id' => $job_id, "posted_by" => Auth::user()->id])->first();
+        if(auth()->user()->role == 'admin'){
+            $data['job'] = ModelsJob::where(['id' => $job_id])->first();
+        }else {
+            $data['job'] = ModelsJob::where(['id' => $job_id, "posted_by" => Auth::user()->id])->first();
+        }
         if(!$data['job']){
             abort(404);
         }
@@ -368,5 +377,124 @@ class AccountController extends Controller
                                         ->orderBy('id', 'desc')
                                         ->paginate(10);
         return view('front.account.job.applied-jobs', $data);
+    }
+
+    public function showSavedJobs(){
+        $data['saved_jobs'] = SavedJob::with(['job', 'job.jobType', 'job.category', 'job.applications'])
+                                    ->where(['user_id' => auth()->user()->id])
+                                    ->orderBy('id', 'desc')
+                                    ->paginate(10);
+        return view('front.account.job.saved-jobs', $data);
+    }
+
+    public function removeSavedJob(Request $request){
+        $jobId = $request->job_id;
+        $savedJob = SavedJob::where(['job_id' => $jobId, 'user_id' => auth()->user()->id])->first();
+        if($savedJob){
+            $savedJob->delete();
+            session()->flash('success', 'Saved job has been removed successfully.');
+            return response()->json([
+                "status" => true,
+                "message" => "Saved job has been removed successfully."
+            ]);
+        }else {
+            session()->flash('error', 'Saved job not found.');
+            return response()->json([  
+                "status" => false,
+                "message" => "Saved job not found."
+            ]); 
+        }
+    }
+
+    public function forgetPassword(){
+        return view('front.account.forget-password');
+    }
+    
+    public function processForgetPassword(Request $request){
+        
+        $validator = Validator::make($request->all(),[
+            "email" => "required|email|exists:users,email"
+        ],
+        [
+            "email.exists" => "The email does not exist in our records."
+        ]);
+
+        if($validator->passes()){
+            // Here you can implement the logic to send a password reset link to the user's email.
+            $token = Str::random(60);
+            //$token = Hash::make($token);
+            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+            DB::table('password_reset_tokens')->insert([
+                'email' => $request->email,
+                'token' => $token,
+                'created_at' => now()
+            ]);
+
+            $user = User::where('email', $request->email)->first();
+            $mailData = [
+                'token' => $token,
+                'user' => $user
+            ];
+
+            Mail::to($request->email)->send(new ResetPasswordEmail($mailData));
+            
+
+            // For now, we'll just flash a success message.
+            session()->flash('success', 'A password reset link has been sent.');
+            return redirect()->back();
+        }else {
+            return  redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+    }
+
+    public function resetPassword($token){
+        
+        $data = DB::table('password_reset_tokens')->where('token', $token)->first();
+        if(!$data){
+            abort(404);
+        }
+
+        $email = $data->email;
+
+        return view('front.account.reset-password', ['email' => $email, 'token' => $token]);
+    }
+
+    public function processResetPassword(Request $request){
+        
+        $validator = Validator::make($request->all(),[
+
+            "password" => "required|min:5|same:confirm_password",
+            "confirm_password" => "required|min:5",
+            "token" => "required"
+        ]);
+
+        if($validator->passes()){
+            $data = DB::table('password_reset_tokens')->where('token', $request->token)->first();
+           
+            if(!$data){
+                session()->flash('error', 'Invalid or expired token.');
+                return  redirect()->back()
+                ->withErrors(['token' => 'Invalid or expired token.'])
+                ->withInput();
+            }
+
+            
+
+            $user = User::where('email', $data->email)->first();
+            $user->password = Hash::make($request->password);
+            $user->save();
+
+            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+            session()->flash('success', 'Your password has been reset successfully.');
+            return redirect()->route('account.login');
+
+        }else {
+            return  redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
     }
 }

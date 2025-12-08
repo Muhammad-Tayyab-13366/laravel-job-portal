@@ -20,4 +20,8 @@ class Job extends Model
     public function applications(){
         return $this->hasMany(JobApplication::class, 'job_id');
     }
+
+    public function employer(){
+        return $this->belongsTo(User::class, 'posted_by');
+    }
 }

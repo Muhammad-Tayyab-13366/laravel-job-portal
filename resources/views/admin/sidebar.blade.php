@@ -1,4 +1,4 @@
-<div class="card border-0 shadow mb-4 p-3">
+<!-- <div class="card border-0 shadow mb-4 p-3">
     <div class="s-body text-center mt-3">
         @if(Auth::user()->image !='')
         <img src="{{ asset('profile_pic/thumb/'.Auth::user()->image) }}" alt="avatar"  class="rounded-circle img-fluid" id="profil-pic" style="width: 150px;">
@@ -11,25 +11,19 @@
             <button data-bs-toggle="modal" data-bs-target="#profile_pic_modal" type="button" class="btn btn-primary">Change Profile Picture</button>
         </div>
     </div>
-</div>
+</div> -->
 <div class="card account-nav border-0 shadow mb-4 mb-lg-0">
     <div class="card-body p-0">
         <ul class="list-group list-group-flush ">
             <li class="list-group-item d-flex justify-content-between p-3">
-                <a href="{{ route('account.profile') }}">Account Settings</a>
+                <a href="{{ route('admin.users')}}">Users</a>
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-center p-3">
-                <a href="{{ route('account.job.create') }}">Post a Job</a>
+                <a href="{{ route('admin.jobs') }}">Jobs</a>
             </li>
             <li class="list-group-item d-flex justify-content-between align-items-center p-3">
-                <a href="{{ route('account.job.my-jobs') }}">My Jobs</a>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center p-3">
-                <a href="{{ route('account.job.my-applied-applications') }}">Jobs Applied</a>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center p-3">
-                <a href="{{ route('account.job.saved-jobs') }}">Saved Jobs</a>
-            </li>   
+                <a href="{{ route('admin.job-applications') }}">Jobs Applications</a>
+            </li>  
             <li class="list-group-item d-flex justify-content-between align-items-center p-3">
                 <a href="{{ route('account.logout') }}">Logout</a>
             </li>                                                        

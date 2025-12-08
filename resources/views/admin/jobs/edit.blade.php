@@ -6,15 +6,15 @@
             <div class="col">
                 <nav aria-label="breadcrumb" class=" rounded-3 p-3 mb-4">
                     <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="{{ route('home') }}">Home</a></li>
-                        <li class="breadcrumb-item active">Edit Job</li>
+                        <li class="breadcrumb-item"><a href="#">Home</a></li>
+                        <li class="breadcrumb-item active">Users</li>
                     </ol>
                 </nav>
             </div>
         </div>
         <div class="row">
             <div class="col-lg-3">
-                @include('front.account.sidebar')
+                @include('admin.sidebar')
             </div>
             <div class="col-lg-9">
                 <form action="" id="job_create_form">
@@ -72,19 +72,19 @@
 
                             <div class="mb-4">
                                 <label for="" class="mb-2">Description<span class="req">*</span></label>
-                                <textarea class="form-control froamt_textarea" name="description" id="description" cols="5" rows="5" placeholder="Description">{{ $job->description }}</textarea>
+                                <textarea class="form-control froamt_textarea" name="description" id="description" cols="5" rows="5" placeholder="Description">{!! $job->description !!}</textarea>
                             </div>
                             <div class="mb-4">
                                 <label for="" class="mb-2">Benefits</label>
-                                <textarea class="form-control froamt_textarea" name="benefits" id="benefits" cols="5" rows="5" placeholder="Benefits">{{ $job->benefits }}</textarea>
+                                <textarea class="form-control froamt_textarea" name="benefits" id="benefits" cols="5" rows="5" placeholder="Benefits">{!! $job->benefits !!}</textarea>
                             </div>
                             <div class="mb-4">
                                 <label for="" class="mb-2">Responsibility</label>
-                                <textarea class="form-control froamt_textarea" name="responsibilities" id="responsibilities" cols="5" rows="5" placeholder="Responsibility">{{ $job->responsibilities }}</textarea>
+                                <textarea class="form-control froamt_textarea" name="responsibilities" id="responsibilities" cols="5" rows="5" placeholder="Responsibility">{!! $job->responsibilities !!}</textarea>
                             </div>
                             <div class="mb-4">
                                 <label for="" class="mb-2">Qualifications</label>
-                                <textarea class="form-control froamt_textarea" name="qualifications" id="qualifications" cols="5" rows="5" placeholder="Qualifications">{{ $job->qualifications }}</textarea>
+                                <textarea class="form-control froamt_textarea" name="qualifications" id="qualifications" cols="5" rows="5" placeholder="Qualifications">{!! $job->qualifications !!}</textarea>
                             </div>
                             
                             
@@ -105,6 +105,16 @@
                                     <option value="10+"  @if($job->experience == "10+") selected @endif>10+ Years</option>
                                 </select>
                             </div>
+
+                            <div class="mb-4">
+                                <label for="" class="mb-2">Is Feature</label>
+                                
+                                <select name="is_featured" id="is_featured"  class="form-control">
+                                    <option value="1" @if($job->is_featured == 1) selected @endif>Yes</option>
+                                    <option value="0" @if($job->is_featured == 0) selected @endif>No</option>
+                                </select>
+                            </div>
+
                             
                             <h3 class="fs-4 mb-1 mt-5 border-top pt-5">Company Details</h3>
 
@@ -137,9 +147,11 @@
 @endsection
 
 
+    
 @section('customJs')
 <script>
     $('.froamt_textarea').trumbowyg();
+
     $("#job_create_form").submit(function(e){
         $("button[type='submit']").prop('disabled', true);
         e.preventDefault();
@@ -149,7 +161,7 @@
         $(".invalid-feedback").remove();
 
         $.ajax({
-            url: "{{ route('account.job.update', ':id') }}".replace(':id', jobId),
+            url: "{{ route('admin.jobs.update', ':id') }}".replace(':id', jobId),
             type: 'post',
             data: $(this).serializeArray(),
             dataType: 'json',
@@ -173,14 +185,11 @@
                 }
                 else {
                     
-                    window.location.href = "{{ route('account.job.my-jobs') }}";
+                    window.location.href = "{{ route('admin.jobs') }}";
                 }
             }
         });
     });
-
-
-
-
+    
 </script>
 @endsection

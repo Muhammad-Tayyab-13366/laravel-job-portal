@@ -37,10 +37,17 @@
                             </div>
                             <div class="jobs_right">
                                 <div class="apply_now">
-                                    <a class="heart_mark" href="#"> <i class="fa fa-heart-o" aria-hidden="true"></i></a>
+                                    @if(Auth::check())
+                                        <a class="heart_mark @if($is_already_saved > 0) saved-job @endif" 
+                                        href="javascript:void(0);" 
+                                        onclick="saveJob({{ $job->id }})"> 
+                                            <i class="fa fa-heart-o" aria-hidden="true"></i>
+                                        </a>
+                                    @endif
                                 </div>
                             </div>
                         </div>
+                        
                         @if(session()->has('success'))
                             <div class="alert alert-success m-3">
                                 {{ session()->get('success') }}
@@ -79,8 +86,11 @@
                         @endif
                         <div class="border-bottom"></div>
                         <div class="pt-3 text-end">
-                            
-                            <a href="#" class="btn btn-secondary">Save</a>
+                            @if(Auth::check())
+                            <a href="javascript:void(0);" class="btn btn-secondary  @if($is_already_saved>0) disabled @endif " id="saveJobBtn" onclick="saveJob({{ $job->id }})" {{ ($is_already_saved) > 0 ? "disabled" : "" }}>{{ ($is_already_saved) > 0 ? "Saved" : "Save" }}</a>
+                            @else 
+                            <a href="javascript:void(0);" class="btn btn-secondary disabled">Login to Save</a>
+                            @endif
                             @if(Auth::check())
                             <a href="javascript:void(0);" id="applyOnJobBtn"
                                 @if(!$is_alrady_applied) onclick="applyOnJob({{ $job->id }})" @endif 
@@ -90,7 +100,54 @@
                             @endif
                         </div>
                     </div>
+                   
                 </div>
+
+                <!--  -->
+                @if(auth()->user()->id == $job->posted_by)
+                <div class="card shadow border-0 mt-4">
+                    <div class="job_details_header">
+                        <div class="single_jobs white-bg d-flex justify-content-between">
+                            <div class="jobs_left d-flex align-items-center">
+                                
+                                <div class="jobs_conetent">
+                                    <h4>Applicstions</h4>
+                                </div>
+                               
+                            </div>
+                            
+                        </div>
+                    </div>
+                    <div class="descript_wrap white-bg">
+                        <div class="table-responsive">
+                            <table class="table ">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <td>Job Title</td>
+                                        <td>Email</td>
+                                        <td>Applied Date</td>
+                                    </tr>
+                                </thead>
+                                <tbody class="border-0">
+                                    @foreach($job_application as $application)
+                                    <tr>    
+                                        <td>{{ $application->user->name }}</td>
+                                        <td>{{ $application->user->email }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($application->applied_at)->format('d M, Y')}}</td>
+                                    </tr>
+                                    @endforeach 
+                                    @if($job_application->count() == 0)
+                                    <tr>
+                                        <td colspan="3" class="text-center">No applications found.</td>
+                                    </tr>
+                                    @endif
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                @endif
+                <!--  -->
             </div>
             <div class="col-md-4">
                 <div class="card shadow border-0">
@@ -159,5 +216,25 @@
             }
         });
    }
+
+    function saveJob(jobId){
+        $("#saveJobBtn").attr("disabled", true);
+        $.ajax({
+            url: "{{ route('account.job.save') }}",
+            type: "POST",
+            data: {
+                job_id: jobId
+            },
+            success: function(response){
+                window.location.reload();
+                
+            },
+            error: function(xhr){
+                $("#saveJobBtn").attr("disabled", false);
+            }
+        });
+   }
+
+   
 </script>
 @endsection

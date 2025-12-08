@@ -30,6 +30,8 @@ RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' \
 # Install Composer
 COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
 
+WORKDIR /var/www/html
+
 # Copy Laravel files
 COPY . /var/www/html
 

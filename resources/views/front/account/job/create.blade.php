@@ -70,19 +70,19 @@
 
                             <div class="mb-4">
                                 <label for="" class="mb-2">Description<span class="req">*</span></label>
-                                <textarea class="form-control" name="description" id="description" cols="5" rows="5" placeholder="Description"></textarea>
+                                <textarea class="form-control froamt_textarea" name="description" id="description" cols="5" rows="5" placeholder="Description"></textarea>
                             </div>
                             <div class="mb-4">
                                 <label for="" class="mb-2">Benefits</label>
-                                <textarea class="form-control" name="benefits" id="benefits" cols="5" rows="5" placeholder="Benefits"></textarea>
+                                <textarea class="form-control froamt_textarea" name="benefits" id="benefits" cols="5" rows="5" placeholder="Benefits"></textarea>
                             </div>
                             <div class="mb-4">
                                 <label for="" class="mb-2">Responsibility</label>
-                                <textarea class="form-control" name="responsibilities" id="responsibilities" cols="5" rows="5" placeholder="Responsibility"></textarea>
+                                <textarea class="form-control froamt_textarea" name="responsibilities" id="responsibilities" cols="5" rows="5" placeholder="Responsibility"></textarea>
                             </div>
                             <div class="mb-4">
                                 <label for="" class="mb-2">Qualifications</label>
-                                <textarea class="form-control" name="qualifications" id="qualifications" cols="5" rows="5" placeholder="Qualifications"></textarea>
+                                <textarea class="form-control froamt_textarea" name="qualifications" id="qualifications" cols="5" rows="5" placeholder="Qualifications"></textarea>
                             </div>
                             
                             
@@ -137,6 +137,7 @@
 
 @section('customJs')
 <script>
+    $('.froamt_textarea').trumbowyg();
     $("#job_create_form").submit(function(e){
         $("button[type='submit']").prop('disabled', true);
         e.preventDefault();
