@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Intervention\Image\ImageManager;
@@ -64,6 +65,12 @@ class AccountController extends Controller
     }
 
     public function processLogin(Request $request){
+
+        // ❗ Stop the request immediately if rate limit exceeded
+        if ($response = $this->checkTooManyFailedAttempts($request)) {
+            return $response;   // <---- return here and stop
+        }
+
         $validator = Validator::make($request->all(),[
     
             "email" => "required|email",
@@ -78,12 +85,19 @@ class AccountController extends Controller
             ]);
 
             if($authenticated){
+
+                // clear attempts on successful login
+                RateLimiter::clear($this->throttleKey($request));
+
                 return response()->json([
                     "status" => true,
                     "errors" => []
                 ]);
 
             }else {
+
+                // increment failed attempts
+                RateLimiter::hit($this->throttleKey($request), 60); // block for 60 seconds
                 return response()->json([
                     "status" => false,
                     "errors" => [
@@ -93,6 +107,10 @@ class AccountController extends Controller
             }
 
         }else {
+
+            // increment failed attempts
+            RateLimiter::hit($this->throttleKey($request), 60); // block for 60 seconds
+
             return response()->json([
                 "status" => false,
                 'errors' => $validator->errors()
@@ -497,4 +515,29 @@ class AccountController extends Controller
                 ->withInput();
         }
     }
+
+    protected function throttleKey(Request $request)
+    {
+        return Str::lower($request->email) . '|' . $request->ip();
+    }
+
+    protected function checkTooManyFailedAttempts(Request $request)
+    {
+        if (RateLimiter::tooManyAttempts($this->throttleKey($request), 5)) {
+
+            $seconds = RateLimiter::availableIn($this->throttleKey($request));
+
+            // ❗ Return the JSON response (do not send)
+            return response()->json([
+                "status" => false,
+                "errors" => [
+                    "email" => ["Too many login attempts. Try again in $seconds seconds."]
+                ]
+            ]);
+
+            exit;
+        }
+        return null; // no rate limit, continue normally
+    }
+
 }
