@@ -97,6 +97,10 @@ class ProfileTest extends TestCase
 
         $this->assertFileExists(public_path('profile_pic').'/'.$savedImage);
         $this->assertFileExists(public_path('profile_pic/thumb').'/'.$savedImage);
+
+          // Clean up after test
+        @unlink(public_path('profile_pic').'/'.$savedImage);
+        @unlink(public_path('profile_pic/thumb').'/'.$savedImage);
     }
 
     public function test_profile_picture_upload_validation_error()
